@@ -3,7 +3,7 @@ html, body { margin: 0; height: 100%; background: #000; color: #e8ecf1;
 #globe { position: fixed; inset: 0; }
 .panel { position: fixed; background: rgba(12, 16, 28, .85); border: 1px solid #2a3350;
   border-radius: 10px; padding: 12px 14px; backdrop-filter: blur(4px); }
-#controls { top: 12px; right: 12px; display: flex; flex-direction: column; gap: 8px; width: 210px; }
+#controls { top: 12px; left: 68px; display: flex; flex-direction: column; gap: 8px; width: 210px; }
 #controls h1 { font-size: 15px; margin: 0; }
 #controls label { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 #controls .check { justify-content: flex-start; }
@@ -21,6 +21,32 @@ button[type=submit] { background: #3b6df0; color: #fff; border: 0; border-radius
 #info a { color: #7fb0ff; font-size: 18px; }
 #close { position: absolute; top: 10px; right: 16px; background: none; border: 0;
   color: inherit; font-size: 34px; cursor: pointer; }
-body.focused #controls, body.focused #legend { display: none; }
-#legend { bottom: 12px; left: 12px; max-width: 280px; font-size: 12px; }
-#legend .note { margin-top: 6px; color: #9aa6c4; }
+.hidden { display: none !important; }
+body.focused #controls, body.focused #nav, body.focused .modal { display: none; }
+
+#nav { top: 12px; left: 12px; padding: 6px; display: flex; flex-direction: column; gap: 6px; }
+#nav button { width: 40px; height: 40px; padding: 8px; background: none; color: #9aa6c4; cursor: pointer;
+  border: 1px solid transparent; border-radius: 8px; }
+#nav button:hover { color: #e8ecf1; background: #1b2238; }
+#nav button.active { color: #fff; background: #1b2238; border-color: #3b6df0; }
+#nav svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round; }
+#nav svg circle[r="1"], #nav svg circle[r=".6"] { fill: currentColor; }
+
+.modal { top: 6vh; left: 68px; width: min(1100px, calc(100vw - 92px)); max-height: 88vh; box-sizing: border-box;
+  overflow: auto; padding: 22px 28px; }
+.modal h2 { margin: 0 0 14px; font-size: 22px; }
+.modal h2 span { font-size: 14px; color: #9aa6c4; font-weight: normal; margin-left: 8px; }
+.modal-close { position: absolute; top: 8px; right: 14px; background: none; border: 0;
+  color: inherit; font-size: 30px; cursor: pointer; }
+#about { width: min(640px, calc(100vw - 92px)); }
+#about ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 10px; color: #c5cde0; }
+#about b { color: #e8ecf1; }
+#about code { background: #1b2238; border-radius: 4px; padding: 1px 5px; }
+.table-wrap { overflow: auto; max-height: calc(88vh - 100px); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #222a44; white-space: nowrap; }
+th { position: sticky; top: 0; background: #12182b; color: #9aa6c4; cursor: pointer; user-select: none; }
+th.sorted::after { content: ' \25B2'; font-size: 9px; } th.sorted.desc::after { content: ' \25BC'; }
+tbody tr { cursor: pointer; } tbody tr:hover { background: #1b2238; }
+td.haz { color: #ff5a3c; }

@@ -5,11 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Near-Earth Asteroid Tracker</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="../images/asteroid.png">
 </head>
 <body>
 <div id="globe"></div>
 
-<form id="controls" class="panel">
+<nav id="nav" class="panel" aria-label="Main">
+    <button type="button" data-target="controls" title="Date range" aria-label="Date range">
+        <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+    </button>
+    <button type="button" data-target="list" title="Asteroid list" aria-label="Asteroid list">
+        <svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" /><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>
+    </button>
+    <button type="button" data-target="about" title="Information" aria-label="Information">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".6"/></svg>
+    </button>
+</nav>
+
+<form id="controls" class="panel hidden">
     <h1>Near-Earth Asteroids</h1>
     <label>From <input type="date" id="start" required></label>
     <label>To <input type="date" id="end" required></label>
@@ -25,11 +38,40 @@
     <a id="i-link" target="_blank" rel="noopener">JPL details &rarr;</a>
 </div>
 
-<div id="legend" class="panel">
-    <div class="note">Distance from Earth is logarithmic. Direction is illustrative only.
-        Data: NASA NeoWs / JPL.
+<section id="list" class="panel modal hidden">
+    <button class="modal-close" aria-label="Close">&times;</button>
+    <h2>Asteroids <span id="list-count"></span></h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr id="list-head"></tr></thead>
+            <tbody id="list-body"></tbody>
+        </table>
     </div>
-</div>
+</section>
+
+<section id="about" class="panel modal hidden">
+    <button class="modal-close" aria-label="Close">&times;</button>
+    <h2>About this view</h2>
+    <ul>
+        <li><b>Distance is logarithmic.</b> An asteroid's distance from Earth's surface is drawn as
+            <code>0.5 &times; log10(1 + miss&nbsp;km / 6371)</code> globe radii, so near and far passes both fit on screen.
+            Distances are not proportional. The exact numbers are in the list and the detail view.</li>
+        <li><b>Directions are made up.</b> NASA's feed gives how close an asteroid passes, not where in the sky.
+            Each asteroid's direction is derived from a hash of its ID, so it is stable but not real.</li>
+        <li><b>The trails are imaginary.</b> They are straight lines ending at the asteroid, sideways to Earth.
+            Their length is proportional to the asteroid's speed. They are not real orbits or flight paths.
+            Cyan trails are normal asteroids, orange-red ones are potentially hazardous.</li>
+        <li><b>Sizes are not to scale.</b> Asteroids are drawn far larger than their true size relative to Earth
+            (they would be invisible otherwise), and larger asteroids are only somewhat larger on screen.</li>
+        <li><b>Shapes are generated.</b> Each asteroid's lumpy, cratered shape is procedural, derived from its ID.
+            Only its diameter range is real data. The surface textures are of the Moon, not of the asteroids.</li>
+        <li><b>&ldquo;Potentially hazardous&rdquo;</b> is NASA's label for asteroids that can come within 0.05 AU
+            (about 7.5 million km) of Earth's orbit and are larger than about 140 m. It does not mean a collision is expected.</li>
+        <li><b>Units.</b> 1 lunar distance = 384,400 km. 1 AU = about 149.6 million km.
+            Miss distance is the closest approach to Earth's centre. The date range filters by closest-approach date.</li>
+        <li><b>Data</b> from NASA NeoWs / JPL. Textures: NASA SVS (LROC Moon colour map), three.js and three-globe example images.</li>
+    </ul>
+</section>
 
 <script type="module" src="app.js"></script>
 </body>
