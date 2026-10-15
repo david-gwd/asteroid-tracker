@@ -1,5 +1,7 @@
 # Near-Earth Asteroid Tracker: Code Documentation
 
+![Asteroid Tracker Dashboard Screenshot](/static/images/dashboard.png?raw=true "Asteroid Tracker Dashboard")
+
 ## 1. Purpose and overview
 
 The Near-Earth Asteroid Tracker visualises asteroids that pass close to Earth in a chosen date range. It consists of two parts:

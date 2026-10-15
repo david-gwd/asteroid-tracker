@@ -12,16 +12,15 @@ input[type=date] { background: #1b2238; color: inherit; border: 1px solid #333c5
 button[type=submit] { background: #3b6df0; color: #fff; border: 0; border-radius: 6px;
   padding: 6px; cursor: pointer; }
 #status { font-size: 12px; color: #9aa6c4; min-height: 1.2em; }
-#info { top: 50%; left: 16px; transform: translateY(-50%); width: 280px; }
+#info { top: 10vh; left: 3vw; width: 44vw; height: 80vh; box-sizing: border-box; padding: 5vh 3vw;
+  overflow: auto; display: flex; flex-direction: column; justify-content: center; }
 #info.hidden { display: none; }
-#info h2 { margin: 0 0 8px; font-size: 16px; }
-#info dl { margin: 0 0 8px; display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; }
+#info h2 { margin: 0 0 24px; font-size: 32px; }
+#info dl { margin: 0 0 24px; display: grid; grid-template-columns: auto 1fr; gap: 12px 24px; font-size: 20px; }
 #info dt { color: #9aa6c4; } #info dd { margin: 0; }
-#info a { color: #7fb0ff; }
-#close { position: absolute; top: 4px; right: 8px; background: none; border: 0;
-  color: inherit; font-size: 22px; cursor: pointer; }
+#info a { color: #7fb0ff; font-size: 18px; }
+#close { position: absolute; top: 10px; right: 16px; background: none; border: 0;
+  color: inherit; font-size: 34px; cursor: pointer; }
+body.focused #controls, body.focused #legend { display: none; }
 #legend { bottom: 12px; left: 12px; max-width: 280px; font-size: 12px; }
 #legend .note { margin-top: 6px; color: #9aa6c4; }
-.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
-  background: #aab; margin-right: 6px; } .dot.haz { background: #ff4d4d; }
-@media (max-width: 600px) { #info { top: auto; bottom: 90px; transform: none; left: 12px; right: 12px; width: auto; } }

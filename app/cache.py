@@ -13,9 +13,7 @@ def _conn() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.execute("CREATE TABLE IF NOT EXISTS days (day TEXT PRIMARY KEY, fetched_at REAL)")
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS asteroids (id TEXT, day TEXT, data TEXT, PRIMARY KEY (id, day))"
-    )
+    conn.execute("CREATE TABLE IF NOT EXISTS asteroids (id TEXT, day TEXT, data TEXT, PRIMARY KEY (id, day))")
     return conn
 
 
