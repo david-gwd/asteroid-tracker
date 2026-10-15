@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Near-Earth Asteroid Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="globe"></div>
+
+  <form id="controls" class="panel">
+    <h1>Near-Earth Asteroids</h1>
+    <label>From <input type="date" id="start" required></label>
+    <label>To <input type="date" id="end" required></label>
+    <button type="submit">Show</button>
+    <label class="check"><input type="checkbox" id="onlyHazardous"> only hazardous</label>
+    <div id="status"></div>
+  </form>
+
+  <div id="info" class="panel hidden">
+    <button id="close" aria-label="Close">&times;</button>
+    <h2 id="i-name"></h2>
+    <dl id="i-body"></dl>
+    <a id="i-link" target="_blank" rel="noopener">JPL details &rarr;</a>
+  </div>
+
+  <div id="legend" class="panel">
+    <div><span class="dot haz"></span> potentially hazardous</div>
+    <div><span class="dot"></span> other</div>
+    <div class="note">Distance from Earth is logarithmic; the dashed ring is the Moon's orbit.
+      Direction is illustrative only. Data: NASA NeoWs / JPL.</div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
