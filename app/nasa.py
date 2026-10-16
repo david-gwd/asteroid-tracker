@@ -43,7 +43,8 @@ def _normalize(neo: dict, day: str) -> dict | None:
 async def _fetch_chunk(client: httpx.AsyncClient, start: date, end: date) -> list[dict]:
     resp = await client.get(FEED_URL, params={
         "start_date": start.isoformat(), "end_date": end.isoformat(),
-        "api_key": os.getenv("NASA_API_KEY", "DEMO_KEY")})
+        # "api_key": os.getenv("NASA_API_KEY", "DEMO_KEY")})
+        "api_key": "DEMO_KEY"
     if resp.status_code != 200:
         raise NasaError(f"NASA returned HTTP {resp.status_code}")
     records = []
