@@ -26,4 +26,4 @@ async def asteroids(start: date, end: date):
     return {"complete": complete, "count": len(records), "vectors_pending": pending, "asteroids": records}
 
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+app.mount("/", StaticFiles(directory="docs", html=True), name="static")

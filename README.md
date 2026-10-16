@@ -1,6 +1,6 @@
 # Near-Earth Asteroid Tracker: Code Documentation
 
-![Asteroid Tracker Dashboard Screenshot](/static/images/dashboard.png?raw=true "Asteroid Tracker Dashboard")
+![Asteroid Tracker Dashboard Screenshot](/docs/images/dashboard.png?raw=true "Asteroid Tracker Dashboard")
 
 ## 1. Purpose and overview
 
@@ -34,9 +34,9 @@ JSON {complete, count, asteroids[]}  →  render() → globe
 | `app/nasa.py` | NASA NeoWs client: chunking, normalisation, cache fallback |
 | `app/horizons.py` | JPL Horizons client: real position and approach direction per asteroid |
 | `app/cache.py` | SQLite cache of asteroid records and fetched days |
-| `static/index.html` | Page structure: globe container, date panel, info popup, legend |
-| `static/app.js` | Globe setup, asteroid placement, UI logic, API calls |
-| `static/style.css` | Styling of the panels and layout |
+| `docs/index.html` | Page structure: globe container, date panel, info popup, legend |
+| `docs/app.js` | Globe setup, asteroid placement, UI logic, API calls |
+| `docs/style.css` | Styling of the panels and layout |
 | `.env` / `.env.example` | `NASA_API_KEY` (`DEMO_KEY` is limited to about 30 requests per hour) |
 | `data/cache.sqlite` | Created automatically at runtime (gitignored) |
 
@@ -46,7 +46,7 @@ JSON {complete, count, asteroids[]}  →  render() → globe
 .venv/bin/uvicorn app.main:app --reload
 ```
 
-Then open http://localhost:8000. The server must be started from the project root, because `StaticFiles(directory="static")` is resolved relative to the working directory.
+Then open http://localhost:8000. The server must be started from the project root, because `StaticFiles(directory="docs")` is resolved relative to the working directory.
 
 ---
 
@@ -54,7 +54,7 @@ Then open http://localhost:8000. The server must be started from the project roo
 
 ### 2.1 `app/main.py`
 
-**Module-level setup.** The module defines `MAX_RANGE_DAYS = 31`, creates the `FastAPI` application `app` (titled "NEO Tracker"), and mounts the `static/` directory at `/` with `html=True`, so `/` serves `static/index.html`. The mount is registered after the API route. FastAPI matches routes in registration order, so `/api/...` is handled by the endpoint and everything else falls through to the static files.
+**Module-level setup.** The module defines `MAX_RANGE_DAYS = 31`, creates the `FastAPI` application `app` (titled "NEO Tracker"), and mounts the `docs/` directory at `/` with `html=True`, so `/` serves `docs/index.html`. The mount is registered after the API route. FastAPI matches routes in registration order, so `/api/...` is handled by the endpoint and everything else falls through to the static files.
 
 #### `asteroids(start: date, end: date)`
 
@@ -121,15 +121,15 @@ Reads all stored asteroid records for the date range, parses each JSON payload b
 
 ## 3. Frontend
 
-### 3.1 `static/index.html`
+### 3.1 `docs/index.html`
 
 A single page with no inline logic. It contains the `#globe` container (filling the screen), the `#controls` form (start date, end date, "Show" button, "only hazardous" checkbox, and a `#status` line), the `#info` popup (hidden until an asteroid is clicked), and the `#legend`. It loads `app.js` as an ES module (`<script type="module">`). The libraries are not loaded by script tags but imported inside `app.js`.
 
-### 3.2 `static/style.css`
+### 3.2 `docs/style.css`
 
 Dark theme. `#globe` is `position: fixed; inset: 0` so the canvas fills the viewport. `.panel` gives the floating panels their translucent, blurred look. The controls sit top-right, the info popup at the left edge (vertically centred), and the legend bottom-left. A media query for narrow screens turns the info popup into a full-width bar above the legend. `.dot` and `.dot.haz` are the grey and red colour markers in the legend.
 
-### 3.3 `static/app.js`
+### 3.3 `docs/app.js`
 
 **Imports and constants.** The file imports `THREE` from `three@0.180.0` and `Globe` from `globe.gl@2.46.2`, both via esm.sh. The `deps=three@0.180.0` parameter makes globe.gl use the same Three.js copy as `app.js`. If two copies were loaded, the meshes created here would not be compatible with the globe's scene. The constants are `EARTH_R_KM` (6371), `MOON_KM` (384400), `GLOBE_R` (100, the globe radius in Three.js units used by Globe.gl), and `K = 0.5`, the scale factor for the altitude formula. The module state is `asteroids`, the list of records from the last successful API call. The helper `$` is shorthand for `document.getElementById`.
 
@@ -196,7 +196,13 @@ Not a named function. `iso(d)` formats a `Date` as `YYYY-MM-DD`. The code then p
 - **Rate limits.** `DEMO_KEY` allows only about 30 requests per hour. A 31-day range needs up to 5 chunks, so getting your own free key at https://api.nasa.gov and putting it in `.env` is recommended.
 - **Positions are real, distances are log-scaled.** `app/horizons.py` asks JPL Horizons for each asteroid's geocentric state vector at its exact closest-approach time (NeoWs `epoch_date_close_approach`) and rotates it into an Earth-fixed frame (GMST). The asteroid sits above the point on Earth it was directly over at that moment, and its trail points back along the direction it came from (the negative velocity). Results are cached forever in the `vectors` table, keyed by `(id, epoch_ms)`. `/api/asteroids` waits up to 5 s for Horizons and reports `vectors_pending`; the frontend polls until the rest is resolved. Asteroids Horizons could not resolve fall back to a hashed, illustrative position (info panel: "approximate").
 - **Dependency on CDNs.** The frontend needs internet access for the esm.sh libraries and the unpkg textures. The Three.js version must stay compatible with Globe.gl's internals (a version that is too old fails with a missing `Timer` export).
-- **Two-tier asteroid texture.** Asteroids use a 1024px Moon texture from threejs.org while zoomed out. On focus, `static/textures/rock_4k.jpg` (4096px, NASA SVS LROC colour map, public domain, https://svs.gsfc.nasa.gov/4720/) is lazy-loaded and swapped in after the fly-in finishes; `unfocus()` swaps back.
+- **Two-tier asteroid texture.** Asteroids use a 1024px Moon texture from threejs.org while zoomed out. On focus, `docs/textures/rock_4k.jpg` (4096px, NASA SVS LROC colour map, public domain, https://svs.gsfc.nasa.gov/4720/) is lazy-loaded and swapped in after the fly-in finishes; `unfocus()` swaps back.
 - **Hypothetical trails.** Each asteroid has a fading `Line2` trail (cyan, or orange-red if hazardous) so it stands out against the starfield without inflating its size. The direction is the real approach direction when known (hashed otherwise); the length is proportional to `velocity_kms`. The selected asteroid's trail is drawn thicker.
 - **Navigation.** A vertical icon bar (top left) opens one panel at a time: the date range form (hidden by default), a sortable table of the currently visible asteroids (clicking a row triggers the same fly-in as clicking the asteroid on the globe), and an information panel with the caveats listed here. Escape closes an open panel before it unfocuses an asteroid.
 - **Unauthenticated API.** The endpoint has no auth or rate limiting of its own, which is fine for local use but needs attention before public deployment.
+
+---
+
+## 5. License
+
+MIT, see [LICENSE](LICENSE). The Moon texture (`docs/textures/rock_4k.jpg`) is NASA SVS public-domain imagery.
