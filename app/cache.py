@@ -55,3 +55,22 @@ def load(start: date, end: date) -> list[dict]:
         rows = c.execute("SELECT data FROM asteroids WHERE day BETWEEN ? AND ?",
                          (start.isoformat(), end.isoformat())).fetchall()
     return sorted((json.loads(r[0]) for r in rows), key=lambda r: r["miss_km"])
+
+
+def _vectors_table(c: sqlite3.Connection) -> None:
+    c.execute("CREATE TABLE IF NOT EXISTS vectors (id TEXT, epoch_ms INTEGER, data TEXT, PRIMARY KEY (id, epoch_ms))")
+
+
+def load_vectors(keys: list[tuple[str, int]]) -> dict[tuple[str, int], dict]:
+    """Cached Horizons results for (id, epoch_ms) keys; never expire (the epoch is part of the key)."""
+    with _conn() as c:
+        _vectors_table(c)
+        rows = c.execute("SELECT id, epoch_ms, data FROM vectors").fetchall()
+    wanted = set(keys)
+    return {(i, e): json.loads(d) for i, e, d in rows if (i, e) in wanted}
+
+
+def store_vector(id: str, epoch_ms: int, data: dict) -> None:
+    with _conn() as c:
+        _vectors_table(c)
+        c.execute("INSERT OR REPLACE INTO vectors VALUES (?, ?, ?)", (id, epoch_ms, json.dumps(data)))

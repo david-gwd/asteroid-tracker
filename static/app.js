@@ -21,9 +21,10 @@ function hash(str, seed) {
   return (h >>> 0) / 4294967296;
 }
 function place(a) {
+  if (a.lat !== undefined) return { ...a, alt: altitudeOf(a.miss_km), approx: false }; // real position from JPL Horizons
   const lat = Math.asin(2 * hash(a.id, 1) - 1) * 180 / Math.PI; // uniform on sphere
   const lng = hash(a.id, 2) * 360 - 180;
-  return { ...a, lat, lng, alt: altitudeOf(a.miss_km) };
+  return { ...a, lat, lng, alt: altitudeOf(a.miss_km), approx: true };
 }
 // Angular, cratered rock: a lumpy ellipsoid, cut by a few flat planes (sharp edges and corners),
 // pitted with craters and roughened by ridged noise. Displacement depends only on the vertex
@@ -84,12 +85,19 @@ const PATH_LEN_PER_KMS = 6, pathMats = new Map(); // asteroid id -> LineMaterial
 function pathLine(a) {
   const c = globe.getCoords(a.lat, a.lng, a.alt);
   const radial = new THREE.Vector3(c.x, c.y, c.z).normalize();
-  const rnd = new THREE.Vector3(hash(a.id, 80) - .5, hash(a.id, 81) - .5, hash(a.id, 82) - .5);
-  let v = new THREE.Vector3().crossVectors(radial, rnd);
+  let v;
+  if (a.from_lat !== undefined) { // real: the direction it came from, made tangent to the radial
+    const f = globe.getCoords(a.from_lat, a.from_lng, 0);
+    v = new THREE.Vector3(f.x, f.y, f.z).normalize();
+    v.addScaledVector(radial, -v.dot(radial));
+  } else {
+    const rnd = new THREE.Vector3(hash(a.id, 80) - .5, hash(a.id, 81) - .5, hash(a.id, 82) - .5);
+    v = new THREE.Vector3().crossVectors(radial, rnd);
+  }
   if (v.lengthSq() < 1e-6) v.set(1, 0, 0);
   v.normalize();
   const len = PATH_LEN_PER_KMS * a.velocity_kms;
-  const tail = v.clone().multiplyScalar(-len), head = new THREE.Vector3(); // ends at the asteroid
+  const tail = v.clone().multiplyScalar(len), head = new THREE.Vector3(); // ends at the asteroid
   const col = new THREE.Color(a.hazardous ? 0xff5a3c : 0x4fd8ff);
   const geo = new LineGeometry();
   geo.setPositions([tail.x, tail.y, tail.z, head.x, head.y, head.z]);
@@ -135,6 +143,7 @@ function showInfo(a) {
     ['', `${a.miss_au.toFixed(4)} AU`],
     ['Velocity', `${a.velocity_kms.toFixed(1)} km/s`],
     ['Hazardous', a.hazardous ? 'yes' : 'no'],
+    ['Position', a.approx ? 'approximate (illustrative)' : 'JPL Horizons'],
   ];
   $('i-body').replaceChildren(...rows.flatMap(([k, v]) => {
     const dt = document.createElement('dt'), dd = document.createElement('dd');
@@ -259,6 +268,7 @@ const COLUMNS = [
   { key: 'miss_au', label: 'AU', get: a => a.miss_au.toFixed(4) },
   { key: 'velocity_kms', label: 'Velocity', get: a => `${a.velocity_kms.toFixed(1)} km/s` },
   { key: 'hazardous', label: 'Hazardous', get: a => a.hazardous ? 'yes' : 'no' },
+  { key: 'approx', label: 'Position', get: a => a.approx ? 'approximate' : 'JPL Horizons' },
 ];
 function renderTable() {
   $('list-count').textContent = `(${visible.length})`;
@@ -288,17 +298,24 @@ function renderTable() {
   }));
 }
 
-async function load(start, end) {
-  $('status').textContent = 'Loading...';
+let loadId = 0;
+async function load(start, end, poll = false) {
+  const id = poll ? loadId : ++loadId;
+  if (!poll) $('status').textContent = 'Loading...';
   try {
     const res = await fetch(`/api/asteroids?start=${start}&end=${end}`);
     if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
     const data = await res.json();
+    if (id !== loadId) return; // a newer range was requested
     asteroids = data.asteroids;
     $('status').textContent = asteroids.length
       ? `${asteroids.length} asteroids` + (data.complete ? '' : ' (NASA unreachable: cached data only)')
       : 'No asteroids in this range.';
-    render();
+    if (data.vectors_pending) {
+      $('status').textContent += ` - resolving positions (${data.vectors_pending} left)`;
+      setTimeout(() => id === loadId && load(start, end, true), 3000);
+    }
+    if (!(poll && focusedId)) render(); // a rebuild during a poll would reset an open focus view
   } catch (e) { $('status').textContent = 'Error: ' + e.message; }
 }
 

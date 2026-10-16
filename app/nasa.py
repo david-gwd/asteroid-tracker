@@ -31,6 +31,7 @@ def _normalize(neo: dict, day: str) -> dict | None:
         "hazardous": neo["is_potentially_hazardous_asteroid"],
         "approach_date": day,
         "approach_datetime": approach.get("close_approach_date_full"),
+        "approach_epoch_ms": int(approach["epoch_date_close_approach"]),
         "miss_km": float(miss["kilometers"]),
         "miss_lunar": float(miss["lunar"]),
         "miss_au": float(miss["astronomical"]),

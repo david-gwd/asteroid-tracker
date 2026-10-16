@@ -56,9 +56,11 @@
         <li><b>Distance is logarithmic.</b> An asteroid's distance from Earth's surface is drawn as
             <code>0.5 &times; log10(1 + miss&nbsp;km / 6371)</code> globe radii, so near and far passes both fit on screen.
             Distances are not proportional. The exact numbers are in the list and the detail view.</li>
-        <li><b>Directions are made up.</b> NASA's feed gives how close an asteroid passes, not where in the sky.
-            Each asteroid's direction is derived from a hash of its ID, so it is stable but not real.</li>
-        <li><b>The trails are imaginary.</b> They are straight lines ending at the asteroid, sideways to Earth.
+        <li><b>Positions are real.</b> Each asteroid sits above the point on Earth it is directly over at its closest
+            approach (JPL Horizons, Earth-fixed frame). Asteroids marked "approximate" in the detail view could not be
+            resolved and have an illustrative, hash-based direction.</li>
+        <li><b>The trails are schematic.</b> They are straight lines ending at the asteroid and point back along the
+            direction it came from.
             Their length is proportional to the asteroid's speed. They are not real orbits or flight paths.
             Cyan trails are normal asteroids, orange-red ones are potentially hazardous.</li>
         <li><b>Sizes are not to scale.</b> Asteroids are drawn far larger than their true size relative to Earth

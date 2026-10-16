@@ -32,6 +32,7 @@ JSON {complete, count, asteroids[]}  →  render() → globe
 |---|---|
 | `app/main.py` | FastAPI app, the `/api/asteroids` endpoint, static file serving |
 | `app/nasa.py` | NASA NeoWs client: chunking, normalisation, cache fallback |
+| `app/horizons.py` | JPL Horizons client: real position and approach direction per asteroid |
 | `app/cache.py` | SQLite cache of asteroid records and fetched days |
 | `static/index.html` | Page structure: globe container, date panel, info popup, legend |
 | `static/app.js` | Globe setup, asteroid placement, UI logic, API calls |
@@ -142,7 +143,7 @@ A deterministic pseudo-random number generator seeded by a string, using the 32-
 
 #### `place(a)`
 
-Adds map coordinates to an asteroid record. NASA's feed contains no usable direction from Earth, so `place` invents one in a reproducible way. Latitude is `asin(2·u − 1)` for `u = hash(id, 1)`, which spreads points uniformly over the sphere. Picking latitude uniformly would bunch points at the poles. Longitude is `hash(id, 2) · 360 − 180`. It also sets `alt` using `altitudeOf(miss_km)`. It returns a copy of the record extended with `lat`, `lng` and `alt`, leaving the original unchanged. The legend states that the direction is illustrative only.
+Adds map coordinates to an asteroid record. If the record already carries `lat`/`lng` from JPL Horizons (see `app/horizons.py`), those are used. Otherwise (Horizons unreachable) `place` invents a direction in a reproducible way and marks the record `approx`. Latitude is `asin(2·u − 1)` for `u = hash(id, 1)`, which spreads points uniformly over the sphere. Picking latitude uniformly would bunch points at the poles. Longitude is `hash(id, 2) · 360 − 180`. It also sets `alt` using `altitudeOf(miss_km)`. It returns a copy of the record extended with `lat`, `lng` and `alt`, leaving the original unchanged. The legend states that the direction is illustrative only.
 
 #### `sizeOf(a)`
 
@@ -193,9 +194,9 @@ Not a named function. `iso(d)` formats a `Date` as `YYYY-MM-DD`. The code then p
 - **Cache granularity is per day.** A single `days` table makes "already fetched" explicit, including for empty days. Past days never expire. Today and future days refresh every 24 hours.
 - **Graceful degradation.** If NASA fails (rate limit, outage, no network), the app serves what is cached and flags it with `complete: false`.
 - **Rate limits.** `DEMO_KEY` allows only about 30 requests per hour. A 31-day range needs up to 5 chunks, so getting your own free key at https://api.nasa.gov and putting it in `.env` is recommended.
-- **Positions are illustrative.** Only the distance is real data (and it is log-scaled). The direction comes from a hash of the asteroid ID. The roadmap item "real approach directions via JPL Horizons" would address this.
+- **Positions are real, distances are log-scaled.** `app/horizons.py` asks JPL Horizons for each asteroid's geocentric state vector at its exact closest-approach time (NeoWs `epoch_date_close_approach`) and rotates it into an Earth-fixed frame (GMST). The asteroid sits above the point on Earth it was directly over at that moment, and its trail points back along the direction it came from (the negative velocity). Results are cached forever in the `vectors` table, keyed by `(id, epoch_ms)`. `/api/asteroids` waits up to 5 s for Horizons and reports `vectors_pending`; the frontend polls until the rest is resolved. Asteroids Horizons could not resolve fall back to a hashed, illustrative position (info panel: "approximate").
 - **Dependency on CDNs.** The frontend needs internet access for the esm.sh libraries and the unpkg textures. The Three.js version must stay compatible with Globe.gl's internals (a version that is too old fails with a missing `Timer` export).
 - **Two-tier asteroid texture.** Asteroids use a 1024px Moon texture from threejs.org while zoomed out. On focus, `static/textures/rock_4k.jpg` (4096px, NASA SVS LROC colour map, public domain, https://svs.gsfc.nasa.gov/4720/) is lazy-loaded and swapped in after the fly-in finishes; `unfocus()` swaps back.
-- **Hypothetical trails.** Each asteroid has a fading `Line2` trail (cyan, or orange-red if hazardous) so it stands out against the starfield without inflating its size. Like the position, the direction is a hash of the ID; the length is proportional to `velocity_kms`. The selected asteroid's trail is drawn thicker.
+- **Hypothetical trails.** Each asteroid has a fading `Line2` trail (cyan, or orange-red if hazardous) so it stands out against the starfield without inflating its size. The direction is the real approach direction when known (hashed otherwise); the length is proportional to `velocity_kms`. The selected asteroid's trail is drawn thicker.
 - **Navigation.** A vertical icon bar (top left) opens one panel at a time: the date range form (hidden by default), a sortable table of the currently visible asteroids (clicking a row triggers the same fly-in as clicking the asteroid on the globe), and an information panel with the caveats listed here. Escape closes an open panel before it unfocuses an asteroid.
 - **Unauthenticated API.** The endpoint has no auth or rate limiting of its own, which is fine for local use but needs attention before public deployment.
