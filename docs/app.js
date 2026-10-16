@@ -298,14 +298,62 @@ function renderTable() {
   }));
 }
 
+// Static hosting (GitHub Pages) has no backend: query NASA NeoWs from the browser instead.
+// DEMO_KEY is rate-limited per visitor IP (~30 requests/hour); no Horizons, so positions are hashed.
+const NASA_FEED = 'https://api.nasa.gov/neo/rest/v1/feed';
+const NASA_KEY = 'DEMO_KEY';
+const MAX_SPAN = 7, MAX_RANGE_DAYS = 31;
+let hasBackend = true;
+
+function normalize(neo, day) { // mirrors app/nasa.py _normalize
+  const ap = neo.close_approach_data.find(x => x.orbiting_body === 'Earth' && x.close_approach_date === day);
+  if (!ap) return null;
+  const diam = neo.estimated_diameter.meters, miss = ap.miss_distance;
+  return {
+    id: neo.id, name: neo.name.replace(/^\(|\)$/g, ''),
+    diameter_min_m: diam.estimated_diameter_min, diameter_max_m: diam.estimated_diameter_max,
+    hazardous: neo.is_potentially_hazardous_asteroid,
+    approach_date: day, approach_datetime: ap.close_approach_date_full ?? null,
+    approach_epoch_ms: Number(ap.epoch_date_close_approach),
+    miss_km: +miss.kilometers, miss_lunar: +miss.lunar, miss_au: +miss.astronomical,
+    velocity_kms: +ap.relative_velocity.kilometers_per_second, jpl_url: neo.nasa_jpl_url,
+  };
+}
+
+async function fetchNasa(start, end) {
+  const s = new Date(start), e = new Date(end), days = (e - s) / 864e5;
+  if (!(days >= 0) || days > MAX_RANGE_DAYS) throw new Error(`Invalid range (end >= start, max ${MAX_RANGE_DAYS} days)`);
+  const records = [];
+  for (let d = s; d <= e; d = new Date(d.getTime() + MAX_SPAN * 864e5)) {
+    const chunkEnd = new Date(Math.min(d.getTime() + (MAX_SPAN - 1) * 864e5, e.getTime()));
+    const res = await fetch(`${NASA_FEED}?start_date=${iso(d)}&end_date=${iso(chunkEnd)}&api_key=${NASA_KEY}`);
+    if (res.status === 429) throw new Error('NASA rate limit reached (DEMO_KEY), try again later');
+    if (!res.ok) throw new Error(`NASA returned HTTP ${res.status}`);
+    for (const [day, neos] of Object.entries((await res.json()).near_earth_objects))
+      for (const n of neos) { const r = normalize(n, day); if (r) records.push(r); }
+  }
+  records.sort((x, y) => x.miss_km - y.miss_km);
+  return { complete: true, count: records.length, vectors_pending: 0, asteroids: records };
+}
+
+async function fetchAsteroids(start, end) {
+  if (hasBackend) {
+    const res = await fetch(`/api/asteroids?start=${start}&end=${end}`);
+    if (res.status !== 404) {
+      if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+      return res.json();
+    }
+    hasBackend = false;
+  }
+  return fetchNasa(start, end);
+}
+
 let loadId = 0;
 async function load(start, end, poll = false) {
   const id = poll ? loadId : ++loadId;
   if (!poll) $('status').textContent = 'Loading...';
   try {
-    const res = await fetch(`/api/asteroids?start=${start}&end=${end}`);
-    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
-    const data = await res.json();
+    const data = await fetchAsteroids(start, end);
     if (id !== loadId) return; // a newer range was requested
     asteroids = data.asteroids;
     $('status').textContent = asteroids.length
